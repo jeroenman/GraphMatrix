@@ -84,11 +84,12 @@ void Graph::addNode(string label)
     bool nodeExists = matrixIn.count(label);
     if (!nodeExists)
     {
-        matrixSize++;
-
+        // ADD NODE TO MATRIX ROW
         vector<int> vecIn = vector<int>();
         matrixIn[label] = vecIn;
+        matrixSize++;
 
+        // ADD NODE TO MATRIX COLUMN
         int i = getIndexOfLabel(label);
         for (auto& pair : matrixIn)
         {
@@ -148,6 +149,7 @@ vector<string> Graph::getNodesWitIncomingNumberOfEdges(int edgeCount)
         const string& key = pair.first;
         const vector<int>& vec = pair.second;
 
+        // COUNT INCOMING EDGES
         int edgeCountNode = 0;
         for (int i = 0; i < matrixSize; i++)
         {
@@ -157,6 +159,7 @@ vector<string> Graph::getNodesWitIncomingNumberOfEdges(int edgeCount)
 			}
         }
 
+        // ADD IF MATCHING
         if (edgeCountNode == edgeCount)
         {
             matchingNodes.push_back(key);
@@ -197,7 +200,7 @@ int Graph::getIndexOfLabel(string label)
     auto it = matrixIn.find(label);
     int index = 0;
 
-    for (auto it_start = matrixIn.begin(); it_start != it; ++it_start)
+    for (auto it_start = matrixIn.begin(); it_start != it; it_start++)
     {
         index++;
     }
@@ -274,6 +277,7 @@ string Graph::getStringOfNodeRelationships()
 
                 if (edgeOut == 0)
                 {
+                    // DIRECTIONAL CASE
                     nodeRelationshipStr = edgeOutLabel + "->" + edgeInLabel;
 
                     if (nodeRelationshipsToIgnoreMap[nodeRelationshipStr])
@@ -287,6 +291,7 @@ string Graph::getStringOfNodeRelationships()
                 else
                 if (edgeOut == 1)
                 {
+                    // BIDIRECTIONAL CASE
                     nodeRelationshipStr = edgeOutLabel + "<>" + edgeInLabel;
 
                     if (nodeRelationshipsToIgnoreMap[nodeRelationshipStr])
