@@ -3,9 +3,9 @@
 int main()
 {
     Graph* graph = new Graph("data/Graph.txt");
-    //graph->removeNodesWithEdgeCount(3);
+    graph->removeNodesWithIncomingNumberOfEdges(3);
     graph->printNodeRelationships();
-    //graph->clean();
+    graph->clean();
 
     delete graph;
 

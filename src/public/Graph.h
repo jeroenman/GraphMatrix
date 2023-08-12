@@ -12,15 +12,15 @@ using namespace std;
 
 struct NodeRelationship
 {
-    NodeRelationship(string _node1Label, string _direction, string _node2Label)
+    NodeRelationship(string _nodeFrom, string _direction, string _nodeTo)
     {
-        node1Label = _node1Label;
+        labelFrom = _nodeFrom;
+        labelTo = _nodeTo;
         direction = _direction;
-        node2Label = _node2Label;
     }
 
-    string node1Label;
-    string node2Label;
+    string labelFrom;
+    string labelTo;
     string direction;
 };
 
@@ -29,23 +29,30 @@ class Graph
     public:
         Graph(string txtFilePath);
 
-        void add(int x, int y);
-        void remove(int x, int y);
-        void addNode(int y);
-        void removeNode(int y);
-        void removeNodesWithEdgeCount(int edgeCount);
+        void addNode(string label);
+        void removeNode(string label);
+        void addEdge(string labelFrom, string labelTo);
+        void removeEdge(string labelFrom, string labelTo);
+        void removeEdgeBidirectional(string labelFrom, string labelTo);
+        void removeNodesWithIncomingNumberOfEdges(int edgeCount);
+
+        void printMatrix();
         void printNodeRelationships();
+
         void clean();
 
     private:
         vector<NodeRelationship*> createNodeRelationships(string txtPath);
         void setupMatrix(vector<NodeRelationship*> nodeRelationships);
+
+        string getStringOfMatrix();
         string getStringOfNodeRelationships();
-        int findHighestAlphabetLetterIndex(vector<NodeRelationship*> nodeRelationships);
+
+        vector<string> getNodesWitIncomingNumberOfEdges(int edgeCount);
+        vector <string> getUniqueNodesLabels(vector<NodeRelationship*> nodeRelationships);
+        int getIndexOfLabel(string label);
+        string getLabelAtIndex(int i);
 
         int matrixSize = 0;
-        vector<vector<int>> matrix;
-
-        map<string, vector<int>> matrixX;
-        map<string, vector<int>> matrixY;
+        map<string, vector<int>> matrixIn;
 };

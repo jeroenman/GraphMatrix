@@ -1,6 +1,5 @@
 #include "Graph.h"
 #include "Helper.h"
-#include <algorithm>
 
 Graph::Graph(string txtFilePath)
 {
@@ -43,129 +42,276 @@ vector<NodeRelationship*> Graph::createNodeRelationships(string txtPath)
     return nodesRelationships;
 }
 
-int Graph::findHighestAlphabetLetterIndex(vector<NodeRelationship*> nodeRelationships)
-{
-    int highestAlphabetLetterIndex = 0;
-
-    for (NodeRelationship* nodeRelationship : nodeRelationships)
-    {
-        size_t node1Label = ALPHABET.find(nodeRelationship->node1Label);
-        size_t node2Label = ALPHABET.find(nodeRelationship->node2Label);
-
-		if (node1Label > highestAlphabetLetterIndex)
-		{
-            highestAlphabetLetterIndex = node1Label;
-		}
-		if (node2Label > highestAlphabetLetterIndex)
-		{
-            highestAlphabetLetterIndex = node2Label;
-		}
-    }
-
-    return highestAlphabetLetterIndex;
-}
-
 void Graph::setupMatrix(vector<NodeRelationship*> nodeRelationships)
 {
-    matrixSize = findHighestAlphabetLetterIndex(nodeRelationships) + 1;
+    vector<string> uniqueLabels = getUniqueNodesLabels(nodeRelationships);
+    matrixSize = static_cast<int>(uniqueLabels.size());
 
-    for (int i = matrixSize - 1; i >= 0; i--)
+    for (string label : uniqueLabels)
     {
-        string letter = ALPHABET.substr(i, 1);
-        matrixX[letter].resize(matrixSize, 0);
-        matrixY[letter].resize(matrixSize, 0);
+        // FAST WAY TO ADD A NODE WITH PREDEFINED SIZE
+        vector<int> vecIn = vector<int>();
+        vecIn.resize(matrixSize);
+        matrixIn[label] = vecIn;
     }
 
-    matrix.resize(matrixSize, std::vector<int>(matrixSize, 0));
-
     for (NodeRelationship* nodeRelationship : nodeRelationships)
-	{
-		int nodeX = static_cast<int>(ALPHABET.find(nodeRelationship->node1Label));
-		int nodeY = static_cast<int>(ALPHABET.find(nodeRelationship->node2Label));
+    {
+        string labelFrom = nodeRelationship->labelFrom;
+        string labelTo = nodeRelationship->labelTo;
         string dir = nodeRelationship->direction;
 
         if (dir == "->")
         {
-            add(nodeX, nodeY);
+            addEdge(labelFrom, labelTo);
         }
         else
         if (dir == "<-")
         {
-            add(nodeY, nodeX);
+            addEdge(labelTo, labelFrom);
         }
         else
         if (dir == "<>")
         {
-            add(nodeX, nodeY);
-            add(nodeY, nodeX);
-        }
-	}
-}
-
-void Graph::add(int x, int y)
-{
-    matrix[y][x] = 1;
-}
-
-void Graph::remove(int x, int y)
-{
-    matrix[y][x] = 0;
-}
-
-void Graph::addNode(int y)
-{
-
-}
-
-void Graph::removeNode(int y)
-{
-    for (int x = 1; x < matrixSize; x++)
-    {
-        if (matrix[y][x] == 1)
-        {
-            remove(x, y);
-            remove(y, x);
+            addEdge(labelFrom, labelTo);
+            addEdge(labelTo, labelFrom);
         }
     }
 }
 
-
-void Graph::removeNodesWithEdgeCount(int edgeCount)
+void Graph::addNode(string label)
 {
-for (int y = 0; y < matrixSize; ++y)
-	{
-		int edgeCountForNode = 0;
+    bool nodeExists = matrixIn.count(label);
+    if (!nodeExists)
+    {
+        matrixSize++;
 
-		for (int x = 0; x < matrixSize; ++x)
-		{
-			if (matrix[y][x] == 1)
-			{
-				edgeCountForNode++;
+        vector<int> vecIn = vector<int>();
+        matrixIn[label] = vecIn;
+
+        int i = getIndexOfLabel(label);
+        for (auto& pair : matrixIn)
+        {
+            if (pair.first == label)
+            {
+				pair.second.resize(matrixSize);
+				continue;
 			}
-		}
 
-		if (edgeCountForNode == edgeCount)
-		{
-			removeNode(y);
-		}
-	}
-    
+            pair.second.insert(pair.second.begin() + i, 0);
+        }
+    }
 }
 
-string Graph::getStringOfNodeRelationships()
+void Graph::removeNode(string label)
+{
+    bool nodeExists = matrixIn.count(label);
+    if (nodeExists)
+    {
+        int i = getIndexOfLabel(label);
+
+        matrixIn.erase(label);
+
+        for (auto& pair : matrixIn)
+        {
+            spliceVectorAtIndex(pair.second, i);
+        }
+
+        matrixSize--;
+    }
+}
+
+void Graph::addEdge(string labelFrom, string labelTo)
+{
+    int iFrom = getIndexOfLabel(labelFrom);
+    matrixIn[labelTo][iFrom] = 1;
+}
+
+void Graph::removeEdge(string labelFrom, string labelTo)
+{
+    int iFrom = getIndexOfLabel(labelFrom);
+    matrixIn[labelTo][iFrom] = 0;
+}
+
+void Graph::removeEdgeBidirectional(string labelFrom, string labelTo)
+{
+    removeEdge(labelFrom, labelTo);
+    removeEdge(labelTo, labelFrom);
+}
+
+vector<string> Graph::getNodesWitIncomingNumberOfEdges(int edgeCount)
+{
+    vector <string> matchingNodes;
+
+    for (const auto& pair : matrixIn)
+    {
+        const string& key = pair.first;
+        const vector<int>& vec = pair.second;
+
+        int edgeCountNode = 0;
+        for (int i = 0; i < matrixSize; i++)
+        {
+            if (vec[i] == 1)
+            {
+                edgeCountNode++;
+			}
+        }
+
+        if (edgeCountNode == edgeCount)
+        {
+            matchingNodes.push_back(key);
+        }
+    }
+
+    return matchingNodes;
+}
+
+void Graph::removeNodesWithIncomingNumberOfEdges(int edgeCount)
+{
+    vector<string> matchingNodes = getNodesWitIncomingNumberOfEdges(edgeCount);
+    for (string label : matchingNodes)
+    {
+        removeNode(label);
+    }
+}
+
+string Graph::getLabelAtIndex(int i)
+{
+    int counter = 0;
+    for (auto& pair : matrixIn)
+    {
+        if (counter == i)
+        {
+            const string& key = pair.first;
+            return key;
+        }
+
+        counter++;
+    }
+
+    return "";
+}
+
+int Graph::getIndexOfLabel(string label)
+{
+    auto it = matrixIn.find(label);
+    int index = 0;
+
+    for (auto it_start = matrixIn.begin(); it_start != it; ++it_start)
+    {
+        index++;
+    }
+
+    return index;
+}
+
+vector <string> Graph::getUniqueNodesLabels(vector<NodeRelationship*> nodeRelationships)
+{
+    vector<string> uniqueLabels = vector<string>();
+
+    for (NodeRelationship* nodeRelationship : nodeRelationships)
+    {
+        string labelFrom = nodeRelationship->labelFrom;
+        string labelTo = nodeRelationship->labelTo;
+
+        int iFrom = getIndexOfElementInVector(uniqueLabels, labelFrom);
+        if (iFrom == -1)
+        {
+            uniqueLabels.push_back(labelFrom);
+        }
+
+        int iTo = getIndexOfElementInVector(uniqueLabels, labelTo);
+        if (iTo == -1)
+        {
+            uniqueLabels.push_back(labelTo);
+        }
+    }
+
+    return uniqueLabels;
+}
+
+string Graph::getStringOfMatrix()
 {
     string result = "";
 
-    for (int i = 0; i < matrixSize; ++i)
+    for (const auto& pair : matrixIn)
     {
-        for (int j = 0; j < matrixSize; ++j)
+        const string& key = pair.first;
+        const vector<int>& vec = pair.second;
+
+        for (int i = 0; i < matrixSize; i++)
         {
-            result += to_string(matrix[i][j]) + " ";
+            result += to_string(matrixIn[key][i]) + " ";
         }
+
         result += "\n";
     }
 
     return result;
+}
+
+string Graph::getStringOfNodeRelationships()
+{
+    std::map<string, bool> nodeRelationshipsToIgnoreMap;
+
+    string result = "";
+
+    for (const auto& pair : matrixIn)
+    {
+        const string& edgeInLabel = pair.first;
+        const vector<int>& vec = pair.second;
+
+        for (int i = 0; i < matrixSize; i++)
+        {
+            int edgeIn = matrixIn[edgeInLabel][i];
+            if (edgeIn == 1)
+            {
+                string edgeOutLabel = getLabelAtIndex(i);
+                int labelIndex = getIndexOfLabel(edgeInLabel);
+                int edgeOut = matrixIn[edgeOutLabel][labelIndex];
+                string nodeRelationshipStr = "";
+                string nodeRelationshipStrInv = "";
+
+                if (edgeOut == 0)
+                {
+                    nodeRelationshipStr = edgeOutLabel + "->" + edgeInLabel;
+
+                    if (nodeRelationshipsToIgnoreMap[nodeRelationshipStr])
+                    {
+                        // ALREADY ADDED 
+                        continue;
+                    }
+
+                    nodeRelationshipStrInv = edgeInLabel + "->" + edgeOutLabel;
+                }
+                else
+                if (edgeOut == 1)
+                {
+                    nodeRelationshipStr = edgeOutLabel + "<>" + edgeInLabel;
+
+                    if (nodeRelationshipsToIgnoreMap[nodeRelationshipStr])
+                    {
+                        // ALREADY ADDED 
+                        continue;
+                    }
+
+                    nodeRelationshipStrInv = edgeInLabel + "<>" + edgeOutLabel;
+                }
+
+                nodeRelationshipsToIgnoreMap[nodeRelationshipStrInv] = true;
+
+                result += nodeRelationshipStr + "\n";
+			}
+        }
+    }
+
+    return result;
+}
+
+void Graph::printMatrix()
+{
+    string matrixStr = getStringOfMatrix();
+    cout << matrixStr;
 }
 
 void Graph::printNodeRelationships()
@@ -176,5 +322,5 @@ void Graph::printNodeRelationships()
 
 void Graph::clean()
 {
-
+    map<string, vector<int>>().swap(matrixIn);
 }

@@ -33,3 +33,16 @@ static int getIndexOfElementInVector(std::vector<T>& vector, T& element)
 
     return -1;
 }
+
+template <typename T>
+static bool spliceElementFromVector(std::vector<T>& vector, T& element)
+{
+    int i = getIndexOfElementInVector(vector, element);
+    if (i != -1)
+    {
+        spliceVectorAtIndex(vector, i);
+        return true;
+    }
+
+    return false;
+}
