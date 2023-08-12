@@ -328,4 +328,5 @@ void Graph::printNodeRelationships()
 void Graph::clean()
 {
     map<string, vector<int>>().swap(matrixIn);
+    matrixSize = 0;
 }
